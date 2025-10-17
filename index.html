@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnnYodha - FoodSaver</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+body, html { margin:0; padding:0; font-family: 'Segoe UI', sans-serif; background:#f0f4f8; text-align:center; }
+
+/* Landing Page */
+#landing { position:fixed; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, #16a085, #2980b9); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000; }
+#landing h1 { font-size:3rem; margin-bottom:20px; }
+#landing button { padding:15px 40px; font-size:1.2rem; border:none; border-radius:8px; background:#f39c12; color:white; cursor:pointer; transition:0.3s; }
+#landing button:hover { background:#e67e22; }
+
+/* Main Page */
+#mainContent { display:none; padding-bottom:50px; }
+
+/* Header */
+header { background:#16a085; color:white; padding:30px 20px; box-shadow:0 3px 6px rgba(0,0,0,0.1); }
+header h1 { margin:0; font-size:2rem; }
+header p { margin:5px 0 0 0; font-size:1rem; }
+
+/* Buttons */
+.button-container { margin:30px 0; }
+.button-container button { padding:15px 30px; margin:0 10px; font-size:1rem; border:none; border-radius:8px; cursor:pointer; background:#2980b9; color:white; transition:0.3s; }
+.button-container button:hover { background:#1c5980; }
+
+/* Forms */
+form { display:none; margin:20px auto; padding:25px; background:white; border-radius:12px; max-width:500px; box-shadow:0 8px 16px rgba(0,0,0,0.1); text-align:left; }
+form h2 { text-align:center; margin-bottom:20px; color:#16a085; }
+form input { width:100%; margin:10px 0; padding:12px; border-radius:6px; border:1px solid #ccc; font-size:1rem; }
+form button { width:100%; padding:12px; margin-top:10px; font-size:1rem; border:none; border-radius:6px; background:#16a085; color:white; cursor:pointer; transition:0.3s; }
+form button:hover { background:#12876f; }
+
+/* Maps */
+.map { width:100%; height:300px; margin:10px 0; border-radius:8px; }
+
+/* Fake Thank You Divs */
+.thankyou { display:none; background:white; padding:30px; max-width:500px; margin:20px auto; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.1); text-align:center; }
+.thankyou h2 { color:#16a085; margin-bottom:15px; }
+.thankyou a { display:inline-block; margin-top:15px; color:#2980b9; text-decoration:none; font-weight:bold; }
+.thankyou a:hover { text-decoration:underline; }
+
+/* Responsive */
+@media(max-width:600px){
+  .button-container button { margin:10px 0; width:80%; }
+  form, .thankyou { margin:20px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Landing Page -->
+<div id="landing">
+  <h1>AnnYodha</h1>
+  <p>Save Excess Food. Help NGOs. Make a Difference.</p>
+  <button id="enterBtn">Enter</button>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent">
+  <header>
+    <h1>FoodSaver</h1>
+    <p>Save excess food & help NGOs</p>
+  </header>
+
+  <div class="button-container">
+    <button id="showDonate">Donate Now</button>
+    <button id="showNGO">Register NGO</button>
+  </div>
+
+  <!-- Food Donation Form -->
+  <form id="donationForm" action="https://formspree.io/f/xanpvpgp" method="POST">
+    <h2>Food Donation</h2>
+    <input type="text" name="donor_name" placeholder="Your Name / Hotel Name" required>
+    <input type="text" name="donor_address" placeholder="Address" required>
+    <input type="tel" name="donor_phone" placeholder="Phone" required>
+    <input type="number" name="donor_foodamount" placeholder="Amount of Food" required>
+    <input type="text" name="donor_foodtype" placeholder="Type of Food" required>
+
+    <div id="donationMap" class="map"></div>
+    <input type="hidden" id="donor_lat" name="donor_lat">
+    <input type="hidden" id="donor_lng" name="donor_lng">
+
+    <button type="submit">Submit Donation</button>
+  </form>
+
+  <div id="donationThanks" class="thankyou">
+    <h2>✅ Donation Submitted!</h2>
+    <p>Thank you for donating food. We will connect with NGOs soon.</p>
+    <a href="#">Back to Forms</a>
+  </div>
+
+  <!-- NGO Registration Form -->
+  <form id="ngoForm" action="https://formspree.io/f/mrbyjogp" method="POST">
+    <h2>NGO Registration</h2>
+    <input type="text" name="ngo_name" placeholder="NGO Name" required>
+    <input type="text" name="ngo_address" placeholder="Address" required>
+    <input type="tel" name="ngo_phone" placeholder="Phone" required>
+    <input type="email" name="ngo_email" placeholder="Email" required>
+    <input type="number" name="ngo_capacity" placeholder="Food Collection Capacity" required>
+
+    <div id="ngoMap" class="map"></div>
+    <input type="hidden" id="ngo_lat" name="ngo_lat">
+    <input type="hidden" id="ngo_lng" name="ngo_lng">
+
+    <button type="submit">Register NGO</button>
+  </form>
+
+  <div id="ngoThanks" class="thankyou">
+    <h2>✅ NGO Registration Received!</h2>
+    <p>Thank you for registering. We will verify your NGO and contact you soon.</p>
+    <a href="#">Back to Forms</a>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+// Elements
+const landing = document.getElementById("landing");
+const enterBtn = document.getElementById("enterBtn");
+const mainContent = document.getElementById("mainContent");
+const donateBtn = document.getElementById("showDonate");
+const ngoBtn = document.getElementById("showNGO");
+const donationForm = document.getElementById("donationForm");
+const ngoForm = document.getElementById("ngoForm");
+const donationThanks = document.getElementById("donationThanks");
+const ngoThanks = document.getElementById("ngoThanks");
+
+// Landing Enter
+enterBtn.addEventListener("click", () => {
+  landing.style.display = "none";
+  mainContent.style.display = "block";
+});
+
+// Show forms
+donateBtn.addEventListener("click", () => {
+  donationForm.style.display = "block";
+  ngoForm.style.display = "none";
+  donationThanks.style.display = "none";
+  ngoThanks.style.display = "none";
+});
+ngoBtn.addEventListener("click", () => {
+  ngoForm.style.display = "block";
+  donationForm.style.display = "none";
+  donationThanks.style.display = "none";
+  ngoThanks.style.display = "none";
+});
+
+// Fake Thank You on submission
+donationForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  donationForm.style.display="none";
+  donationThanks.style.display="block";
+  e.target.submit();
+});
+ngoForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  ngoForm.style.display="none";
+  ngoThanks.style.display="block";
+  e.target.submit();
+});
+
+// Initialize Donation Map
+const donationMap = L.map('donationMap').setView([20.5937, 78.9629], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(donationMap);
+let donationMarker;
+donationMap.on('click', function(e) {
+  const {lat,lng} = e.latlng;
+  if(donationMarker) donationMap.removeLayer(donationMarker);
+  donationMarker = L.marker([lat,lng]).addTo(donationMap);
+  document.getElementById('donor_lat').value = lat;
+  document.getElementById('donor_lng').value = lng;
+});
+
+// Initialize NGO Map
+const ngoMap = L.map('ngoMap').setView([20.5937, 78.9629], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(ngoMap);
+let ngoMarker;
+ngoMap.on('click', function(e) {
+  const {lat,lng} = e.latlng;
+  if(ngoMarker) ngoMap.removeLayer(ngoMarker);
+  ngoMarker = L.marker([lat,lng]).addTo(ngoMap);
+  document.getElementById('ngo_lat').value = lat;
+  document.getElementById('ngo_lng').value = lng;
+});
+
+// Back to Forms links
+donationThanks.querySelector('a').addEventListener('click', () => {
+  donationThanks.style.display="none";
+  donationForm.style.display="block";
+});
+ngoThanks.querySelector('a').addEventListener('click', () => {
+  ngoThanks.style.display="none";
+  ngoForm.style.display="block";
+});
+</script>
+</body>
+</html>
