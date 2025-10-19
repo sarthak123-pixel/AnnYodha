@@ -45,7 +45,7 @@ footer a:hover { color:#3498db; }
 <body class="gradient-bg">
 
 <!-- Welcome -->
-<section id="welcome" class="active">
+<section id="welcome" class="active" style="background-image:url('help.png'); background-size:cover; background-position:center;">
   <h1>Welcome to AnnYodha</h1>
   <p>Connecting Donors with NGOs — Together for a Better Tomorrow 🌊</p>
   <button id="getStarted" class="btn">Get Started</button>
@@ -70,17 +70,18 @@ footer a:hover { color:#3498db; }
   <h2>About Us</h2>
   <p>AnnYodha bridges the gap between surplus food and people in need. We partner with hotels, restaurants, and individuals to efficiently deliver food to hungry communities.</p>
   <p><strong>Our Mission:</strong> Reduce food waste, improve accessibility, and create sustainable relationships between donors and NGOs.</p>
-  <p><strong>How We Work:</strong> Donors submit food donations specifying type and quantity. NGOs receive alerts and manage distribution efficiently. Volunteers assist in reaching remote communities.</p>
+  <p><strong>How We Work:</strong> Donors submit food donations specifying type, quantity, and message. NGOs receive alerts about nearby donations. Volunteers assist in reaching remote communities.</p>
   <p><strong>Our Impact:</strong> Thousands of meals served every month, reducing waste and feeding the needy. Every contribution counts toward a healthier, more compassionate society.</p>
 </section>
 
 <!-- Donate Form -->
 <section id="donateForm" style="background-image:url('help.png');">
-  <form id="donateFormActual" action="https://formspree.io/f/xanpvpgp" method="POST">
+  <form id="donateFormActual">
     <h2>Food Donation</h2>
     <input type="text" name="donor_name" placeholder="Your Name / Hotel Name" required>
+    <input type="email" name="donor_email" placeholder="Your Email" required>
     <input type="text" name="donor_address" id="donorAddress" placeholder="Click on map to select address" readonly required>
-    <button type="button" class="btn" onclick="showMap('donorAddress')">Select Address on Map</button>
+    <button type="button" class="btn" onclick="showMap('donor')">Select Address on Map</button>
     <input type="tel" name="donor_phone" placeholder="Phone" required>
     <input type="number" name="donor_foodamount" placeholder="Amount of Food" required>
     <select name="donor_foodtype" required>
@@ -88,20 +89,25 @@ footer a:hover { color:#3498db; }
       <option value="Veg">Veg</option>
       <option value="Non-Veg">Non-Veg</option>
     </select>
+    <input type="text" name="donor_message" placeholder="Message to nearby NGOs">
+    <input type="hidden" name="donor_lat" id="donor_lat">
+    <input type="hidden" name="donor_lng" id="donor_lng">
     <button type="submit">Submit Donation</button>
   </form>
 </section>
 
 <!-- NGO Form -->
 <section id="ngoForm" style="background-image:url('help.png');">
-  <form id="ngoFormActual" action="https://formspree.io/f/xanpvpgp" method="POST">
+  <form id="ngoFormActual">
     <h2>NGO Registration</h2>
     <input type="text" name="ngo_name" placeholder="NGO Name" required>
-    <input type="text" name="ngo_address" id="ngoAddress" placeholder="Click on map to select address" readonly required>
-    <button type="button" class="btn" onclick="showMap('ngoAddress')">Select Address on Map</button>
-    <input type="tel" name="ngo_phone" placeholder="Phone" required>
     <input type="email" name="ngo_email" placeholder="Email" required>
+    <input type="text" name="ngo_address" id="ngoAddress" placeholder="Click on map to select address" readonly required>
+    <button type="button" class="btn" onclick="showMap('ngo')">Select Address on Map</button>
+    <input type="tel" name="ngo_phone" placeholder="Phone" required>
     <input type="number" name="ngo_capacity" placeholder="Food Collection Capacity" required>
+    <input type="hidden" name="ngo_lat" id="ngo_lat">
+    <input type="hidden" name="ngo_lng" id="ngo_lng">
     <button type="submit">Register NGO</button>
   </form>
 </section>
@@ -110,7 +116,7 @@ footer a:hover { color:#3498db; }
 <section id="mapSection" style="background:black;">
   <h2>Select Address</h2>
   <div id="map"></div>
-  <button class="btn" onclick="showSection(currentFormSection)">Done</button>
+  <button class="btn" onclick="doneMap()">Done</button>
 </section>
 
 <!-- Thank You -->
@@ -135,8 +141,24 @@ footer a:hover { color:#3498db; }
   <a href="#" id="jobsLink" style="display:none;">Jobs</a>
 </footer>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAG9AjCGuNewHyUy2cAudm097mg4ilRbe8",
+  authDomain: "annyodha-550a9.firebaseapp.com",
+  projectId: "annyodha-550a9",
+  storageBucket: "annyodha-550a9.firebasestorage.app",
+  messagingSenderId: "200833826425",
+  appId: "1:200833826425:web:6e088dcea3566a879b1ea8",
+  measurementId: "G-FGQGCKD4KB"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 // Ripple effect
 document.body.addEventListener('click', function(e){
   const ripple = document.createElement('span');
@@ -151,7 +173,7 @@ document.body.addEventListener('click', function(e){
 // Sections
 const sections = document.querySelectorAll('section');
 const mainNav = document.getElementById('mainNav');
-let currentFormSection = '';
+let currentFormField = '';
 function showSection(id){
   sections.forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -165,6 +187,143 @@ document.getElementById('getStarted').addEventListener('click', ()=>{
   document.getElementById('jobsLink').style.display='inline';
 });
 
+// Map
+let map, marker;
+function showMap(field){
+  currentFormField = field;
+  showSection('mapSection');
+  if(!map){
+    map = L.map('map').setView([28.6139,77.2090], 12); // Default Delhi
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    marker = L.marker([28.6139,77.2090], {draggable:true}).addTo(map);
+    marker.on('dragend', function(e){ updateLatLng(currentFormField,e.target.getLatLng()); });
+    map.on('click', function(e){ marker.setLatLng(e.latlng); updateLatLng(currentFormField,e.latlng); });
+  }
+}
+
+function updateLatLng(field, latlng){
+  if(field==='donor'){
+    document.getElementById('donorAddress').value='Lat:'+latlng.lat.toFixed(5)+' Lng:'+latlng.lng.toFixed(5);
+    document.getElementById('donor_lat').value=latlng.lat;
+    document.getElementById('donor_lng').value=latlng.lng;
+  } else {
+    document.getElementById('ngoAddress').value='Lat:'+latlng.lat.toFixed(5)+' Lng:'+latlng.lng.toFixed(5);
+    document.getElementById('ngo_lat').value=latlng.lat;
+    document.getElementById('ngo_lng').value=latlng.lng;
+  }
+}
+
+function doneMap(){ showSection(currentFormField==='donor'?'donateForm':'ngoForm'); }
+
+// --- Donor Submit ---
+document.getElementById('donateFormActual').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const f = e.target;
+  try{
+    const donorRef = await addDoc(collection(db,'donations'),{
+      name:f.donor_name.value,
+      email:f.donor_email.value,
+      address:f.donor_address.value,
+      phone:f.donor_phone.value,
+      foodType:f.donor_foodtype.value,
+      amount:Number(f.donor_foodamount.value),
+      message:f.donor_message.value,
+      lat:Number(f.donor_lat.value),
+      lng:Number(f.donor_lng.value),
+      timestamp:serverTimestamp()
+    });
+
+    // Notify nearest 5–7 NGOs
+    const ngoSnap = await getDocs(collection(db,'ngos'));
+    let ngos = [];
+    ngoSnap.forEach(doc=>{
+      const data = doc.data();
+      const distance = getDistance(Number(f.donor_lat.value), Number(f.donor_lng.value), data.lat, data.lng);
+      ngos.push({...data, distance});
+    });
+    ngos.sort((a,b)=>a.distance - b.distance);
+    const nearestNGOs = ngos.slice(0,7);
+    for(const ngo of nearestNGOs){
+      await addDoc(collection(db,'notifications'),{
+        ngoEmail: ngo.email,
+        donorName: f.donor_name.value,
+        donorMessage: f.donor_message.value,
+        donorAddress: f.donor_address.value,
+        donorFoodType: f.donor_foodtype.value,
+        donorAmount: Number(f.donor_foodamount.value),
+        timestamp: serverTimestamp()
+      });
+    }
+
+    alert('Donation submitted!');
+    f.reset();
+    showSection('thankyou');
+  }catch(err){ alert('Error: '+err); }
+});
+
+// --- NGO Submit ---
+document.getElementById('ngoFormActual').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const f = e.target;
+  try{
+    await addDoc(collection(db,'ngos'),{
+      name:f.ngo_name.value,
+      email:f.ngo_email.value,
+      address:f.ngo_address.value,
+      phone:f.ngo_phone.value,
+      capacity:Number(f.ngo_capacity.value),
+      lat:Number(f.ngo_lat.value),
+      lng:Number(f.ngo_lng.value),
+      timestamp:serverTimestamp()
+    });
+    alert('NGO Registered!');
+    f.reset();
+    showSection('thankyou');
+  }catch(err){ alert('Error: '+err); }
+});
+
+// --- Helper: Haversine distance in km ---
+function getDistance(lat1, lng1, lat2, lng2){
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R*c;
+}
+
+// --- ChatBot ---
+function toggleChat(){
+  const chat = document.getElementById('chatBot');
+  chat.style.display = chat.style.display==='flex'?'none':'flex';
+}
+function sendMessage(){
+  const input = document.getElementById('userInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+  addMessage(msg,'userMsg');
+  input.value='';
+  setTimeout(()=>botReply(msg),500);
+}
+function addMessage(msg,type){
+  const chatMessages = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className=`message ${type}`;
+  div.textContent=msg;
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+function botReply(msg){
+  msg=msg.toLowerCase();
+  let reply="Sorry, I didn't understand that. Try asking about donating or getting food.";
+  if(msg.includes('donate')) reply="To donate food, please go to 'Donate Now' form.";
+  else if(msg.includes('food') || msg.includes('help')) reply="If you need food, please share your location on the map and contact a nearby NGO.";
+  else if(msg.includes('ngo')) reply="To register an NGO, use the 'Register NGO' form.";
+  addMessage(reply,'botMsg');
+}
+
 // Navigation
 document.querySelectorAll('nav a').forEach(link=>{
   link.addEventListener('click', e=>{
@@ -173,88 +332,7 @@ document.querySelectorAll('nav a').forEach(link=>{
     showSection(target);
   });
 });
-
-// Formspree Submit
-document.getElementById('donateFormActual').addEventListener('submit', e=>{
-  e.preventDefault();
-  fetch(e.target.action,{
-    method:'POST',
-    body:new FormData(e.target),
-    headers:{'Accept':'application/json'}
-  }).then(res=>{
-    if(res.ok){ showSection('thankyou'); e.target.reset(); } else alert('Submission failed.'); 
-  }).catch(()=>alert('Error submitting.'));
-});
-document.getElementById('ngoFormActual').addEventListener('submit', e=>{
-  e.preventDefault();
-  fetch(e.target.action,{
-    method:'POST',
-    body:new FormData(e.target),
-    headers:{'Accept':'application/json'}
-  }).then(res=>{
-    if(res.ok){ showSection('thankyou'); e.target.reset(); } else alert('Submission failed.'); 
-  }).catch(()=>alert('Error submitting.'));
-});
-
-// Leaflet Map for address selection
-let map, marker;
-function showMap(inputId){
-  currentFormSection = inputId.includes('donor') ? 'donateForm' : 'ngoForm';
-  showSection('mapSection');
-
-  if(!map){
-    map = L.map('map').setView([28.6139,77.2090], 12); // Default Delhi
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-    marker = L.marker([28.6139,77.2090], {draggable:true}).addTo(map);
-    marker.on('dragend', function(e){ setAddress(inputId, e.target.getLatLng()); });
-    map.on('click', function(e){ marker.setLatLng(e.latlng); setAddress(inputId, e.latlng); });
-  }
-}
-
-function setAddress(inputId, latlng){
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latlng.lat}&lon=${latlng.lng}`)
-    .then(res => res.json())
-    .then(data => {
-      if(data.display_name){
-        document.getElementById(inputId).value = data.display_name;
-      }
-    });
-}
-
-// ChatBot Script
-function toggleChat(){
-  const chat = document.getElementById('chatBot');
-  chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
-}
-
-function sendMessage(){
-  const input = document.getElementById('userInput');
-  const msg = input.value.trim();
-  if(!msg) return;
-  addMessage(msg, 'userMsg');
-  input.value='';
-  setTimeout(()=>botReply(msg), 500);
-}
-
-function addMessage(msg, type){
-  const chatMessages = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.className = `message ${type}`;
-  div.textContent = msg;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function botReply(msg){
-  msg = msg.toLowerCase();
-  let reply = "Sorry, I didn't understand that. Try asking about donating or getting food.";
-  if(msg.includes('donate')) reply = "To donate food, please go to 'Donate Now' form.";
-  else if(msg.includes('food') || msg.includes('help')) reply = "If you need food, please share your location on the map and contact a nearby NGO.";
-  else if(msg.includes('ngo')) reply = "To register an NGO, use the 'Register NGO' form.";
-  addMessage(reply,'botMsg');
-}
 </script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </body>
 </html>
