@@ -3,336 +3,916 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AnnYodha - FoodSaver</title>
+<title>AnnYodha Prototype</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
-html, body { margin:0; padding:0; height:100%; font-family:'Segoe UI',sans-serif; overflow:hidden; color:white; cursor:pointer; }
-body { background:black; }
-.gradient-bg { background: linear-gradient(-45deg, #3498db, #2ecc71, #2980b9, #27ae60); background-size: 400% 400%; animation: gradientMove 20s ease infinite; }
+body, html { 
+  margin:0; padding:0; font-family: 'Segoe UI', sans-serif; 
+  text-align:center;
+  background: transparent !important;
+  background-blend-mode: normal;
+  height:100%;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0; 
+  z-index: -999; 
+  background:
+    /* Fullscreen image (place the attached image in same folder named "background.jpg") */
+    url('background.jpg') center / cover no-repeat,
+    radial-gradient(circle at 10% 20%, rgba(255,255,255,0.08), transparent 15%),
+    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.06), transparent 15%),
+    linear-gradient( 120deg,
+      rgba(11, 218, 11, 0.596) 0%,
+      rgba(46, 204, 113, 0.42) 22%,
+      rgba(52, 152, 219, 0.40) 47%,
+      rgba(155, 89, 182, 0.38) 70%,
+      rgba(241, 196, 15, 0.36) 100%
+    ),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent 50%);
+  /* first layer = cover, then sizes for the animated gradients */
+  background-size: cover, 200% 200%, 200% 200%, 400% 400%, 150% 150%;
+  filter: blur(24px) saturate(110%);
+  opacity: 0.85;
+  animation: 
+    gradientMove 18s ease infinite,
+    backgroundShift 12s ease-in-out infinite alternate,
+    pulseGlow 8s ease-in-out infinite;
+  will-change: transform, background-position;
+  pointer-events: none;
+}
+
+@keyframes gradientMove {
+  0% { transform: scale(1) translateZ(0) rotate(0deg); }
+  33% { transform: scale(1.02) translateZ(0) rotate(1deg); }
+  66% { transform: scale(1.01) translateZ(0) rotate(-1deg); }
+  100% { transform: scale(1) translateZ(0) rotate(0deg); }
+}
+
+@keyframes backgroundShift {
+  0% { background-position: 0% 50%, 100% 0%, 0% 0%, 50% 50%; }
+  25% { background-position: 20% 30%, 80% 20%, 30% 50%, 60% 40%; }
+  50% { background-position: 50% 70%, 50% 100%, 60% 30%, 40% 60%; }
+  75% { background-position: 80% 40%, 20% 60%, 90% 70%, 30% 70%; }
+  100% { background-position: 100% 50%, 0% 0%, 0% 100%, 50% 50%; }
+}
+
+@keyframes pulseGlow {
+  0% { opacity: 0.92; filter: blur(24px) saturate(120%); }
+  50% { opacity: 0.95; filter: blur(28px) saturate(130%); }
+  100% { opacity: 0.92; filter: blur(24px) saturate(120%); }
+}
+
+#landing { 
+  position:fixed; top:0; left:0; width:100%; height:100%; 
+  /* make landing background transparent so body background image shows through */
+  background: transparent;
+  color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; 
+  z-index:1000;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 1000px rgba(0,0,0,0.06); 
+}
+#landing h1 { font-size:3rem; margin-bottom:20px; }
+#landing button { padding:15px 40px; font-size:1.2rem; border:none; border-radius:8px; background:#ca8414; color:white; cursor:pointer; transition:0.3s; }
+#landing button:hover { background:#e67e22; }
+
+#mainContent { display:none; padding-bottom:50px; }
+#mainContent.show {
+  animation: fadeIn 0.7s ease-in
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.ripple-effect.animate {
+  animation: ripple-anim 0.6s linear;
+}
+
+@keyframes ripple-anim {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+.ripple:after {
+  .ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  transform: scale(0);
+  pointer-events: none;
+}
+
+.ripple-effect.animate {
+  animation: ripple-anim 0.6s linear;
+}
+
+@keyframes ripple-anim {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+  content: "";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform .5s, opacity 1s;
+}
+.ripple:active:after {
+  transform: scale(0, 0);
+  opacity: .3;
+  transition: 0s;
+}
+
+@keyframes spinner {
+  to {transform: rotate(360deg);}
+}
+.loading {
+  position: relative !important;
+  color: transparent !important;
+}
+.loading:before {
+  content: '';
+  box-sizing: border-box;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  margin-left: -10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  border-top-color: transparent;
+  animation: spinner .6s linear infinite;
+}
+
+header { background:#99121200; color:rgb(255, 255, 255); padding:35px 30px;}
+header h1 { margin:0; font-size:2rem; }
+header p { margin:5px 0 0 0; font-size:1rem; }
+
+.button-container { margin:30px 0; }
+.button-container button { padding:15px 30px; margin:0 10px; font-size:1rem; border:none; border-radius:8px; cursor:pointer; background:#2980b9; color:white; transition:0.3s; }
+.button-container button:hover { background:#1c5980; }
+
+form { 
+  display:none; 
+  margin: 20px auto;
+  padding: 25px 28px; 
+  background:white; 
+  border-radius:12px; 
+  max-width:500px; 
+  box-sizing: border-box;
+  box-shadow:0 8px 16px rgba(0,0,0,0.1); 
+  text-align:center; 
+}
+form h2 { text-align:center; margin-bottom:20px; color:#16a085; }
+form input { 
+  width:90%; 
+  margin:10px auto;
+  padding:12px 14px; 
+  border-radius:6px; 
+  border:1px solid #ccc; 
+  font-size:1rem; 
+  display:block;
+  box-sizing:border-box;
+  text-align:center;
+}
+form button { 
+  width:92%; 
+  margin:10px auto 0 auto;
+  display:block;
+  padding:12px; 
+  margin-top:10px; 
+  font-size:1rem; 
+  border:none; 
+  border-radius:6px; 
+  background:#16a085; 
+  color:white; 
+  cursor:pointer; 
+  transition:0.3s; 
+}
+form button:hover { background:#12876f; }
+
+.center-input {
+  text-align: center;
+}
+
+.map { width:100%; height:300px; margin:10px 0; border-radius:8px; }
+
+.thankyou { display:none; background:white; padding:30px; max-width:500px; margin:20px auto; border-radius:12px; box-shadow:0 8px 16px rgba(0,0,0,0.1); text-align:center; }
+.thankyou h2 { color:#16a085; margin-bottom:15px; }
+.thankyou a { display:inline-block; margin-top:15px; color:#2980b9; text-decoration:none; font-weight:bold; }
+.thankyou a:hover { text-decoration:underline; }
+
+#preloader{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+  background: linear-gradient(180deg, rgba(2,6,23,0.72), rgba(4,8,30,0.6));
+  backdrop-filter: blur(6px);
+  transition: opacity .45s ease, visibility .45s ease;
+}
+#preloader.fade-out{ opacity:0; visibility:hidden; pointer-events:none; }
+
+.loader-card{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:18px 22px;
+  border-radius:12px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  box-shadow: 0 12px 40px rgba(4,8,25,0.65);
+  color:#fff;
+  font-weight:600;
+}
+.spinner{
+  width:36px; height:36px; border-radius:50%;
+  border:4px solid rgba(255,255,255,0.12);
+  border-top-color:#fff;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to{ transform: rotate(360deg); } }
+
+.loader-text{ font-size:0.98rem; opacity:0.96; }
+.loader-text .dots::after{
+  content: '';
+  display:inline-block;
+  width:6px; height:6px; border-radius:50%;
+  background:#fff;
+  box-shadow: 12px 0 #fff, 24px 0 #fff;
+  margin-left:10px;
+  vertical-align:middle;
+  animation: dots 1s steps(3,end) infinite;
+}
+@keyframes dots{
+  0%{ box-shadow: 12px 0 rgba(255,255,255,0), 24px 0 rgba(255,255,255,0); }
+  40%{ box-shadow: 12px 0 rgba(255,255,255,0.45), 24px 0 rgba(255,255,255,0); }
+  70%{ box-shadow: 12px 0 rgba(255,255,255,0.9), 24px 0 rgba(255,255,255,0.45); }
+  100%{ box-shadow: 12px 0 rgba(255,255,255,1), 24px 0 rgba(255,255,255,0.9); }
+}
+
+.loading-active #landing,
+.loading-active #mainContent{
+  filter: blur(3px) saturate(0.98);
+  transform-origin:center;
+  pointer-events:none;
+}
+
+.button-container button{
+  transition: transform .18s ease, box-shadow .18s ease;
+  box-shadow: 0 6px 18px rgba(15,65,115,0.08);
+}
+.button-container button:hover{
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 18px 36px rgba(15,65,115,0.12);
+}
+
+form, .thankyou{
+  transition: transform .45s cubic-bezier(.2,.9,.3,1), box-shadow .3s ease, opacity .35s ease;
+  will-change: transform, opacity;
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes float{
+  0%{ transform: translateY(0px); }
+  50%{ transform: translateY(-6px); }
+  100%{ transform: translateY(0px); }
+}
+
+.map{
+  transition: transform .28s ease, box-shadow .28s ease;
+  border-radius:10px;
+  box-shadow: 0 8px 22px rgba(6,22,50,0.06);
+}
+.map:hover{
+  transform: translateY(-8px);
+  box-shadow: 0 20px 46px rgba(6,22,50,0.12);
+}
+
+#landing{ z-index:1000; }
+
+@media(max-width:600px){
+  .button-container button { margin:10px 0; width:80%; }
+  form, .thankyou { margin:20px 10px; }
+}
+
+.locate-btn {
+  display: block;
+  width: 90%; 
+  margin: 10px auto; 
+  padding: 12px 14px; 
+  background: #2980b9;
+  color: rgb(16, 223, 161);
+  border: none;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(6,22,50,0.08);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  text-align: center; 
+}
+
+/* New UI additions from Untitled-122 (non-destructive, namespaced where possible) */
+html, body.gradient-bg { height:100%; }
+.gradient-bg { background: linear-gradient(-45deg, #3498db55, #2ecc7155, #2980b955, #27ae6055); background-size: 400% 400%; animation: gradientMove 20s ease infinite; }
 @keyframes gradientMove { 0% {background-position:0% 50%;} 50% {background-position:100% 50%;} 100% {background-position:0% 50%;} }
-.ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,0.5); transform:scale(0); animation:rippleEffect 0.6s ease-out forwards; pointer-events:none; }
-@keyframes rippleEffect { to { transform: scale(4); opacity:0; } }
-nav { position:fixed; top:20px; left:20px; display:flex; gap:20px; z-index:1000; display:none; }
-nav a { color:white; text-decoration:none; font-weight:bold; font-size:1rem; transition:0.3s; padding:6px 12px; border-radius:6px; }
-nav a:hover { background:#3498db; }
-section { position:absolute; top:0; left:0; width:100%; height:100%; padding:50px 20px; text-align:center; opacity:0; pointer-events:none; transition:opacity 0.8s ease; background-size:cover; background-position:center; overflow:auto; }
-section.active { opacity:1; pointer-events:auto; }
-.btn { padding:15px 30px; font-size:1.2rem; border:none; border-radius:25px; background:white; color:#2980b9; cursor:pointer; font-weight:bold; transition:0.3s; }
-.btn:hover { background:#3498db; color:white; box-shadow:0 0 15px rgba(0,0,0,0.5); }
-form { display:inline-block; margin-top:50px; padding:25px; background:rgba(0,0,0,0.7); border-radius:12px; max-width:500px; color:white; text-align:left; box-shadow:0 8px 16px rgba(0,0,0,0.5); }
-form h2 { text-align:center; margin-bottom:20px; color:#3498db; }
-form input, form select, form button { width:100%; margin:10px 0; padding:12px; border-radius:6px; border:none; font-size:1rem; }
-form input, form select { background:#222; color:white; border:1px solid #555; }
-form button { background:#3498db; color:white; cursor:pointer; transition:0.3s; }
-form button:hover { background:#2980b9; }
-footer { position:fixed; bottom:20px; right:20px; display:flex; gap:15px; }
-footer a { color:white; text-decoration:none; font-weight:bold; transition:0.3s; }
-footer a:hover { color:#3498db; }
-@media(max-width:600px){ nav { flex-direction:column; top:10px; left:10px; gap:10px; } form { width:90%; margin-top:120px; } }
-#map { width:100%; height:400px; border-radius:12px; margin-top:20px; }
-#chatBot { position:fixed; bottom:20px; right:20px; width:300px; max-height:400px; background:rgba(0,0,0,0.9); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 16px rgba(0,0,0,0.5); display:none; z-index:2000; }
-#chatHeader { background:#3498db; padding:10px; font-weight:bold; cursor:pointer; }
-#chatMessages { flex:1; padding:10px; overflow-y:auto; color:white; font-size:0.9rem; }
-#chatInput { display:flex; border-top:1px solid #555; }
-#chatInput input { flex:1; border:none; padding:10px; background:#222; color:white; border-radius:0; }
-#chatInput button { padding:10px; background:#3498db; color:white; border:none; cursor:pointer; }
-#chatInput button:hover { background:#2980b9; }
-.message { margin:5px 0; padding:6px 10px; border-radius:10px; max-width:80%; }
-.userMsg { background:#3498db; align-self:flex-end; }
-.botMsg { background:#2ecc71; align-self:flex-start; }
+
+nav#mainNav { position:fixed; top:20px; left:20px; display:flex; gap:12px; z-index:1500; display:none; }
+nav#mainNav a { color:white; text-decoration:none; font-weight:600; font-size:0.95rem; padding:8px 12px; border-radius:8px; transition:0.2s; background:rgba(0,0,0,0.18); }
+nav#mainNav a:hover { background:rgba(255,255,255,0.06); }
+
+.btn-ui { padding:10px 20px; font-size:0.95rem; border:none; border-radius:20px; background:#ffffff; color:#2980b9; cursor:pointer; font-weight:700; transition:0.18s; }
+.btn-ui:hover { background:#3498db; color:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
+
+#chatBot { position:fixed; bottom:20px; right:20px; width:320px; max-height:420px; background:rgba(0,0,0,0.85); border-radius:12px; display:none; flex-direction:column; overflow:hidden; z-index:2000; box-shadow:0 12px 36px rgba(0,0,0,0.45); }
+#chatHeader { background:#3498db; padding:10px; font-weight:700; color:#fff; cursor:pointer; }
+#chatMessages { flex:1; padding:10px; overflow:auto; color:#fff; font-size:0.9rem; display:flex; flex-direction:column; gap:8px; }
+#chatInput { display:flex; border-top:1px solid rgba(255,255,255,0.06); }
+#chatInput input { flex:1; border:none; padding:10px; background:#111; color:#fff; }
+#chatInput button { padding:10px; background:#3498db; color:#fff; border:none; cursor:pointer; }
+.message { margin:4px 0; padding:8px 10px; border-radius:10px; max-width:82%; }
+.userMsg { background:#3498db; align-self:flex-end; color:#fff; }
+.botMsg { background:#2ecc71; align-self:flex-start; color:#062e17; }
+
+footer#siteFooter { position:fixed; bottom:18px; left:20px; display:flex; gap:12px; z-index:1500; }
+footer#siteFooter a { color:white; text-decoration:none; font-weight:600; padding:6px 10px; background:rgba(0,0,0,0.18); border-radius:8px; }
+
+.map-container { position: relative; }
+
+/* About section styling */
+.about {
+  display: none;
+  margin: 24px auto;
+  padding: 22px;
+  max-width: 760px;
+  background: rgba(255,255,255,0.95);
+  color: #123;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(6,22,50,0.08);
+  text-align: left;
+}
+.about h2 { margin-top: 0; color: #16a085; }
+.about p { line-height: 1.45; margin: 10px 0; color: #0b2540; }
+.about ul { margin: 10px 0 0 18px; color: #0b2540; }
 </style>
 </head>
 <body class="gradient-bg">
 
-<!-- Welcome -->
-<section id="welcome" class="active" style="background-image:url('help.png'); background-size:cover; background-position:center;">
-  <h1>Welcome to AnnYodha</h1>
-  <p>Connecting Donors with NGOs — Together for a Better Tomorrow 🌊</p>
-  <button id="getStarted" class="btn">Get Started</button>
-</section>
-
-<!-- Navigation -->
-<nav id="mainNav">
-  <a href="#" data-target="home">Home</a>
-  <a href="#" data-target="aboutUs" id="aboutUsLink" style="display:none;">About Us</a>
-  <a href="#" data-target="donateForm">Donate Now</a>
-  <a href="#" data-target="ngoForm">Register NGO</a>
-  <a href="#" onclick="toggleChat()">Need Help?</a>
-</nav>
-
-<!-- Home -->
-<section id="home" style="background-image:url('help.png');">
-  <h2>Welcome to AnnYodha</h2>
-</section>
-
-<!-- About Us -->
-<section id="aboutUs" style="background-image:url('help.png'); text-align:left;">
-  <h2>About Us</h2>
-  <p>AnnYodha bridges the gap between surplus food and people in need. We partner with hotels, restaurants, and individuals to efficiently deliver food to hungry communities.</p>
-  <p><strong>Our Mission:</strong> Reduce food waste, improve accessibility, and create sustainable relationships between donors and NGOs.</p>
-  <p><strong>How We Work:</strong> Donors submit food donations specifying type, quantity, and message. NGOs receive alerts about nearby donations. Volunteers assist in reaching remote communities.</p>
-  <p><strong>Our Impact:</strong> Thousands of meals served every month, reducing waste and feeding the needy. Every contribution counts toward a healthier, more compassionate society.</p>
-</section>
-
-<!-- Donate Form -->
-<section id="donateForm" style="background-image:url('help.png');">
-  <form id="donateFormActual">
-    <h2>Food Donation</h2>
-    <input type="text" name="donor_name" placeholder="Your Name / Hotel Name" required>
-    <input type="email" name="donor_email" placeholder="Your Email" required>
-    <input type="text" name="donor_address" id="donorAddress" placeholder="Click on map to select address" readonly required>
-    <button type="button" class="btn" onclick="showMap('donor')">Select Address on Map</button>
-    <input type="tel" name="donor_phone" placeholder="Phone" required>
-    <input type="number" name="donor_foodamount" placeholder="Amount of Food" required>
-    <select name="donor_foodtype" required>
-      <option value="">Select Food Type</option>
-      <option value="Veg">Veg</option>
-      <option value="Non-Veg">Non-Veg</option>
-    </select>
-    <input type="text" name="donor_message" placeholder="Message to nearby NGOs">
-    <input type="hidden" name="donor_lat" id="donor_lat">
-    <input type="hidden" name="donor_lng" id="donor_lng">
-    <button type="submit">Submit Donation</button>
-  </form>
-</section>
-
-<!-- NGO Form -->
-<section id="ngoForm" style="background-image:url('help.png');">
-  <form id="ngoFormActual">
-    <h2>NGO Registration</h2>
-    <input type="text" name="ngo_name" placeholder="NGO Name" required>
-    <input type="email" name="ngo_email" placeholder="Email" required>
-    <input type="text" name="ngo_address" id="ngoAddress" placeholder="Click on map to select address" readonly required>
-    <button type="button" class="btn" onclick="showMap('ngo')">Select Address on Map</button>
-    <input type="tel" name="ngo_phone" placeholder="Phone" required>
-    <input type="number" name="ngo_capacity" placeholder="Food Collection Capacity" required>
-    <input type="hidden" name="ngo_lat" id="ngo_lat">
-    <input type="hidden" name="ngo_lng" id="ngo_lng">
-    <button type="submit">Register NGO</button>
-  </form>
-</section>
-
-<!-- Map Section -->
-<section id="mapSection" style="background:black;">
-  <h2>Select Address</h2>
-  <div id="map"></div>
-  <button class="btn" onclick="doneMap()">Done</button>
-</section>
-
-<!-- Thank You -->
-<section id="thankyou" style="background-image:url('help.png');">
-  <h2>Thank You!</h2>
-  <p>Your submission has been received successfully.</p>
-  <button class="btn" onclick="showSection('home')">Go to Home</button>
-</section>
-
-<!-- ChatBot -->
-<div id="chatBot">
-  <div id="chatHeader" onclick="toggleChat()">Need Help? (Click to Close)</div>
-  <div id="chatMessages"></div>
-  <div id="chatInput">
-    <input type="text" id="userInput" placeholder="Type your message..." />
-    <button onclick="sendMessage()">Send</button>
+<div id="preloader" role="status" aria-live="polite">
+  <div class="loader-card">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="loader-text">Loading maps and assets<span class="dots"></span></div>
   </div>
 </div>
 
-<footer>
-  <a href="mailto:orewasarthak0302@gmail.com">Contact Us</a>
-  <a href="#" id="jobsLink" style="display:none;">Jobs</a>
+<div id="landing">
+  <h1 style="size: 2;color: rgb(60, 74, 104);">AnnYodha</h1>
+  <h3 style="font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;">Help the needy and create an impact</h3>
+  <button id="enterBtn" class="ripple">Enter</button>
+</div>
+
+<div id="mainContent">
+  <header>
+    <h1>AnnYodha</h1>
+    <h3 style="align-items: center;">Help the needy and create an impact</h3>
+  </header>
+
+  <!-- About section (hidden by default) -->
+  <section id="aboutSection" class="about" aria-hidden="true">
+    <h2>About AnnYodha</h2>
+    <p>AnnYodha is a community-driven platform connecting donors and local NGOs to reduce food wastage and rapidly distribute meals to those in need. We provide an easy way to register NGOs, donate surplus food, and share locations so help reaches people quickly.</p>
+    <p>Our core pillars:</p>
+    <ul>
+      <li>Fast connection: Donors share location; nearby NGOs can coordinate pickups.</li>
+      <li>Verified partners: NGOs are registered and verified for safe handling and distribution.</li>
+      <li>Community impact: Transparent reporting and simple workflows to make giving accessible.</li>
+    </ul>
+    <p style="margin-top:12px;">Contact: <a href="mailto:orewasarthak0302@gmail.com">orewasarthak0302@gmail.com</a></p>
+  </section>
+
+  <div class="button-container">
+    <button id="showDonate" class="ripple">Donate Now</button>
+    <button id="showNGO" class="ripple">Register NGO</button>
+  </div>
+
+  <form id="donationForm" action="https://formspree.io/f/xanpvpgp" method="POST">
+    <h2>Food Donation</h2>
+    <input type="text" name="donor_name" placeholder="Your Name" required>
+    <input type="text" name="donor_name" placeholder="Your institute's name " required>
+    <input type="text" name="donor_address" id="donor_address" placeholder="Address" required class="center-input">
+    <input type="text" name="donor_pincode" id="donor_pincode" placeholder="Pincode" required class="center-input">
+    <input type="text" name="donor_landmark" id="donor_landmark" placeholder="Landmark" required class="center-input">
+    <input type="tel" name="donor_phone" placeholder="Phone" required>
+    <input type="number" name="donor_foodamount" placeholder="Amount of Food (in Kgs)" required>
+    <input type="text" name="donor_foodtype" placeholder="Type of Food" required>
+    <button type="button" id="donationLocateBtn" class="locate-btn ripple">📍 Use my location</button>
+    <div id="donationMap" class="map"></div>
+    <input type="hidden" id="donor_lat" name="donor_lat">
+    <input type="hidden" id="donor_lng" name="donor_lng">
+    <button type="submit">Submit Donation</button>
+  </form>
+
+  <div id="donationThanks" class="thankyou">
+    <h2>✅ Donation Submitted!</h2>
+    <h4>Thank you for donating food. We will connect with NGOs soon.</h4>
+    <a href="#">Back to Forms</a>
+  </div>
+
+  <form id="ngoForm" action="https://formspree.io/f/mrbyjogp" method="POST">
+    <h2>NGO Registration</h2>
+    <input type="text" name="ngo_name" placeholder="NGO Name" required>
+    <input type="text" name="ngo_address" id="ngo_address" placeholder="Address" required class="center-input">
+    <input type="text" name="ngo_pincode" id="ngo_pincode" placeholder="Pincode" required class="center-input">
+    <input type="text" name="ngo_landmark" id="ngo_landmark" placeholder="Landmark" required class="center-input">
+    <input type="tel" name="ngo_phone" placeholder="Phone" required>
+    <input type="email" name="ngo_email" placeholder="Email" required>
+    <input type="number" name="ngo_capacity" placeholder="Food Collection Capacity" required>
+    <button type="button" id="ngoLocateBtn" class="locate-btn ripple">📍 Use my location</button>
+    <div id="ngoMap" class="map"></div>
+    <input type="hidden" id="ngo_lat" name="ngo_lat">
+    <input type="hidden" id="ngo_lng" name="ngo_lng">
+    <button type="submit">Register NGO</button>
+  </form>
+
+  <div id="ngoThanks" class="thankyou">
+    <h2>✅ NGO Registration Received!</h2>
+    <p>Thank you for registering. We will verify your NGO and contact you soon.</p>
+    <a href="#">Back to Forms</a>
+  </div>
+
+</div>
+
+<!-- inject navigation (won't remove existing header/buttons) -->
+<nav id="mainNav" aria-label="Main navigation">
+  <a href="#" data-target="home">Home</a>
+  <a href="#" data-target="donateForm">Donate</a>
+  <a href="#" data-target="ngoForm">Register NGO</a>
+  <a href="#" data-target="about">About</a>
+  <a href="#" id="needHelpBtn">Need Help?</a>
+</nav>
+
+<!-- inject chat UI -->
+<div id="chatBot" role="dialog" aria-hidden="true">
+  <div id="chatHeader">Need Help? (click to close)</div>
+  <div id="chatMessages" aria-live="polite"></div>
+  <div id="chatInput">
+    <input type="text" id="userInput" placeholder="Type your message..." />
+    <button id="sendChatBtn">Send</button>
+  </div>
+</div>
+
+<!-- inject footer -->
+<footer id="siteFooter" aria-hidden="false">
+  <a href="mailto:orewasarthak0302@gmail.com">Contact</a>
 </footer>
 
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const preloader = document.getElementById('preloader');
+let donationTilesLoaded = false;
+let ngoTilesLoaded = false;
+let domLoaded = false;
+const minPreloadMs = 700;
+const preloadStart = performance.now();
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAG9AjCGuNewHyUy2cAudm097mg4ilRbe8",
-  authDomain: "annyodha-550a9.firebaseapp.com",
-  projectId: "annyodha-550a9",
-  storageBucket: "annyodha-550a9.firebasestorage.app",
-  messagingSenderId: "200833826425",
-  appId: "1:200833826425:web:6e088dcea3566a879b1ea8",
-  measurementId: "G-FGQGCKD4KB"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// Ripple effect
-document.body.addEventListener('click', function(e){
-  const ripple = document.createElement('span');
-  ripple.classList.add('ripple');
-  ripple.style.left = `${e.clientX}px`;
-  ripple.style.top = `${e.clientY}px`;
-  ripple.style.width = ripple.style.height = '20px';
-  document.body.appendChild(ripple);
-  ripple.addEventListener('animationend', () => ripple.remove());
-});
-
-// Sections
-const sections = document.querySelectorAll('section');
-const mainNav = document.getElementById('mainNav');
-let currentFormField = '';
-function showSection(id){
-  sections.forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+function hidePreloader(){
+  const elapsed = performance.now() - preloadStart;
+  const wait = Math.max(0, minPreloadMs - elapsed);
+  setTimeout(()=> {
+    preloader.classList.add('fade-out');
+    preloader.addEventListener('transitionend', ()=> preloader.remove(), { once:true });
+    document.body.classList.remove('loading-active');
+  }, wait);
 }
-
-// Get Started
-document.getElementById('getStarted').addEventListener('click', ()=>{
-  mainNav.style.display='flex';
-  showSection('home');
-  document.getElementById('aboutUsLink').style.display='inline';
-  document.getElementById('jobsLink').style.display='inline';
-});
-
-// Map
-let map, marker;
-function showMap(field){
-  currentFormField = field;
-  showSection('mapSection');
-  if(!map){
-    map = L.map('map').setView([28.6139,77.2090], 12); // Default Delhi
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-    marker = L.marker([28.6139,77.2090], {draggable:true}).addTo(map);
-    marker.on('dragend', function(e){ updateLatLng(currentFormField,e.target.getLatLng()); });
-    map.on('click', function(e){ marker.setLatLng(e.latlng); updateLatLng(currentFormField,e.latlng); });
+function checkAllLoaded(){
+  if(donationTilesLoaded && ngoTilesLoaded && domLoaded){
+    hidePreloader();
   }
 }
+document.body.classList.add('loading-active');
 
-function updateLatLng(field, latlng){
-  if(field==='donor'){
-    document.getElementById('donorAddress').value='Lat:'+latlng.lat.toFixed(5)+' Lng:'+latlng.lng.toFixed(5);
-    document.getElementById('donor_lat').value=latlng.lat;
-    document.getElementById('donor_lng').value=latlng.lng;
-  } else {
-    document.getElementById('ngoAddress').value='Lat:'+latlng.lat.toFixed(5)+' Lng:'+latlng.lng.toFixed(5);
-    document.getElementById('ngo_lat').value=latlng.lat;
-    document.getElementById('ngo_lng').value=latlng.lng;
-  }
-}
+const landing = document.getElementById("landing");
+const enterBtn = document.getElementById("enterBtn");
+const mainContent = document.getElementById("mainContent");
+const donateBtn = document.getElementById("showDonate");
+const ngoBtn = document.getElementById("showNGO");
+const donationForm = document.getElementById("donationForm");
+const ngoForm = document.getElementById("ngoForm");
+const donationThanks = document.getElementById("donationThanks");
+const ngoThanks = document.getElementById("ngoThanks");
 
-function doneMap(){ showSection(currentFormField==='donor'?'donateForm':'ngoForm'); }
+// ===== START RIPPLE EFFECT JS =====
+document.querySelectorAll('.ripple').forEach(button => {
+  button.addEventListener('click', function(e){
+    const circle = document.createElement('span');
+    circle.classList.add('ripple-effect');
+    this.appendChild(circle);
 
-// --- Donor Submit ---
-document.getElementById('donateFormActual').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const f = e.target;
-  try{
-    const donorRef = await addDoc(collection(db,'donations'),{
-      name:f.donor_name.value,
-      email:f.donor_email.value,
-      address:f.donor_address.value,
-      phone:f.donor_phone.value,
-      foodType:f.donor_foodtype.value,
-      amount:Number(f.donor_foodamount.value),
-      message:f.donor_message.value,
-      lat:Number(f.donor_lat.value),
-      lng:Number(f.donor_lng.value),
-      timestamp:serverTimestamp()
-    });
+    const d = Math.max(this.clientWidth, this.clientHeight);
+    circle.style.width = circle.style.height = d + 'px';
+    const rect = this.getBoundingClientRect();
+    circle.style.left = e.clientX - rect.left - d/2 + 'px';
+    circle.style.top = e.clientY - rect.top - d/2 + 'px';
 
-    // Notify nearest 5–7 NGOs
-    const ngoSnap = await getDocs(collection(db,'ngos'));
-    let ngos = [];
-    ngoSnap.forEach(doc=>{
-      const data = doc.data();
-      const distance = getDistance(Number(f.donor_lat.value), Number(f.donor_lng.value), data.lat, data.lng);
-      ngos.push({...data, distance});
-    });
-    ngos.sort((a,b)=>a.distance - b.distance);
-    const nearestNGOs = ngos.slice(0,7);
-    for(const ngo of nearestNGOs){
-      await addDoc(collection(db,'notifications'),{
-        ngoEmail: ngo.email,
-        donorName: f.donor_name.value,
-        donorMessage: f.donor_message.value,
-        donorAddress: f.donor_address.value,
-        donorFoodType: f.donor_foodtype.value,
-        donorAmount: Number(f.donor_foodamount.value),
-        timestamp: serverTimestamp()
-      });
-    }
-
-    alert('Donation submitted!');
-    f.reset();
-    showSection('thankyou');
-  }catch(err){ alert('Error: '+err); }
-});
-
-// --- NGO Submit ---
-document.getElementById('ngoFormActual').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const f = e.target;
-  try{
-    await addDoc(collection(db,'ngos'),{
-      name:f.ngo_name.value,
-      email:f.ngo_email.value,
-      address:f.ngo_address.value,
-      phone:f.ngo_phone.value,
-      capacity:Number(f.ngo_capacity.value),
-      lat:Number(f.ngo_lat.value),
-      lng:Number(f.ngo_lng.value),
-      timestamp:serverTimestamp()
-    });
-    alert('NGO Registered!');
-    f.reset();
-    showSection('thankyou');
-  }catch(err){ alert('Error: '+err); }
-});
-
-// --- Helper: Haversine distance in km ---
-function getDistance(lat1, lng1, lat2, lng2){
-  const R = 6371;
-  const dLat = (lat2-lat1)*Math.PI/180;
-  const dLng = (lng2-lng1)*Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  const c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R*c;
-}
-
-// --- ChatBot ---
-function toggleChat(){
-  const chat = document.getElementById('chatBot');
-  chat.style.display = chat.style.display==='flex'?'none':'flex';
-}
-function sendMessage(){
-  const input = document.getElementById('userInput');
-  const msg = input.value.trim();
-  if(!msg) return;
-  addMessage(msg,'userMsg');
-  input.value='';
-  setTimeout(()=>botReply(msg),500);
-}
-function addMessage(msg,type){
-  const chatMessages = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.className=`message ${type}`;
-  div.textContent=msg;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-function botReply(msg){
-  msg=msg.toLowerCase();
-  let reply="Sorry, I didn't understand that. Try asking about donating or getting food.";
-  if(msg.includes('donate')) reply="To donate food, please go to 'Donate Now' form.";
-  else if(msg.includes('food') || msg.includes('help')) reply="If you need food, please share your location on the map and contact a nearby NGO.";
-  else if(msg.includes('ngo')) reply="To register an NGO, use the 'Register NGO' form.";
-  addMessage(reply,'botMsg');
-}
-
-// Navigation
-document.querySelectorAll('nav a').forEach(link=>{
-  link.addEventListener('click', e=>{
-    e.preventDefault();
-    const target = link.getAttribute('data-target');
-    showSection(target);
+    circle.classList.add('animate');
+    circle.addEventListener('animationend', () => circle.remove());
   });
 });
+// ===== END RIPPLE EFFECT JS =====
+
+
+enterBtn.addEventListener("click", () => {
+  landing.style.display = "none";
+  mainContent.style.display = "block";
+  const nav = document.getElementById('mainNav');
+  if (nav) nav.style.display = 'flex';
+
+  // remove center buttons since the nav provides the same actions
+  const centerButtons = document.querySelector('.button-container');
+  if (centerButtons) centerButtons.remove();
+});
+
+donateBtn.addEventListener("click", () => {
+  donationForm.style.display = "block";
+  ngoForm.style.display = "none";
+  donationThanks.style.display = "none";
+  ngoThanks.style.display = "none";
+  setTimeout(() => {
+    donationMap.invalidateSize();
+    if (donationUserLocation.marker) {
+      donationMap.fitBounds(donationUserLocation.circle.getBounds());
+    }
+  }, 100);
+});
+
+ngoBtn.addEventListener("click", () => {
+  ngoForm.style.display = "block";
+  donationForm.style.display = "none";
+  donationThanks.style.display = "none";
+  ngoThanks.style.display = "none";
+  setTimeout(() => {
+    ngoMap.invalidateSize();
+    if (ngoUserLocation.marker) {
+      ngoMap.fitBounds(ngoUserLocation.circle.getBounds());
+    }
+  }, 100);
+});
+
+donationForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  donationForm.style.display="none";
+  donationThanks.style.display="block";
+  e.target.submit();
+});
+ngoForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  ngoForm.style.display="none";
+  ngoThanks.style.display="block";
+  e.target.submit();
+});
+
+function addLocateControl(buttonId, onLocate) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = '📍 Locating...';
+    try {
+      const pos = await requestUserLocation();
+      onLocate(pos);
+      btn.textContent = '📍 Use my location';
+    } catch (err) {
+      console.warn('Geolocation failed or denied', err);
+      btn.textContent = '📍 Location unavailable';
+      setTimeout(()=> { 
+        btn.textContent = '📍 Use my location'; 
+        btn.disabled = false; 
+      }, 1400);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+function requestUserLocation(options = { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      return reject(new Error('Geolocation not supported'));
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      (err) => reject(err),
+      options
+    );
+  });
+}
+
+let donationUserLocation = { marker: null, circle: null };
+let ngoUserLocation = { marker: null, circle: null };
+
+enterBtn.addEventListener("click", async () => {
+  landing.style.display = "none";
+  mainContent.style.display = "block";
+
+  // remove center buttons since the nav provides the same actions
+  const centerButtons = document.querySelector('.button-container');
+  if (centerButtons) centerButtons.remove();
+
+  try {
+    const pos = await requestUserLocation();
+    const latlng = [pos.lat, pos.lng];
+    if (donationMap) {
+      donationMap.setView(latlng, 13, { animate: true });
+      if (donationUserLocation.marker) donationMap.removeLayer(donationUserLocation.marker);
+      if (donationUserLocation.circle) donationMap.removeLayer(donationUserLocation.circle);
+      donationUserLocation.marker = L.circleMarker(latlng, { radius:6, color:'#1E90FF', fillColor:'#1E90FF', fillOpacity:0.9 }).addTo(donationMap);
+      donationUserLocation.circle = L.circle(latlng, { radius: Math.max(30, pos.accuracy || 50), color:'#1E90FF', fillOpacity:0.06 }).addTo(donationMap);
+    }
+    if (ngoMap) {
+      ngoMap.setView(latlng, 13, { animate: true });
+      if (ngoUserLocation.marker) ngoMap.removeLayer(ngoUserLocation.marker);
+      if (ngoUserLocation.circle) ngoMap.removeLayer(ngoUserLocation.circle);
+      ngoUserLocation.marker = L.circleMarker(latlng, { radius:6, color:'#1E90FF', fillColor:'#1E90FF', fillOpacity:0.9 }).addTo(ngoMap);
+      ngoUserLocation.circle = L.circle(latlng, { radius: Math.max(30, pos.accuracy || 50), color:'#1E90FF', fillOpacity:0.06 }).addTo(ngoMap);
+    }
+  } catch (err) {
+    console.info('Could not obtain user location on enter:', err && err.message);
+  }
+});
+
+const donationMap = L.map('donationMap', {
+  minZoom: 3,
+  maxZoom: 18,
+  zoomControl: true,
+  scrollWheelZoom: true
+}).setView([20.5937, 78.9629], 5);
+
+const donationTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '©️ OpenStreetMap contributors',
+  maxZoom: 19,
+  crossOrigin: true,
+  maxNativeZoom: 18
+}).addTo(donationMap);
+
+donationTiles.on('loading', () => {
+  document.body.classList.add('loading-active');
+});
+donationTiles.on('load', () => {
+  donationTilesLoaded = true;
+  checkAllLoaded();
+});
+
+let donationMarker;
+donationMap.on('click', async function(e) {
+  const {lat,lng} = e.latlng;
+  if(donationMarker) donationMap.removeLayer(donationMarker);
+  donationMarker = L.marker([lat,lng]).addTo(donationMap);
+  document.getElementById('donor_lat').value = lat;
+  document.getElementById('donor_lng').value = lng;
+  const info = await reverseGeocode(lat, lng);
+  if (info.address) document.getElementById('donor_address').value = info.address;
+  if (info.pincode) document.getElementById('donor_pincode').value = info.pincode;
+  if (info.landmark) document.getElementById('donor_landmark').value = info.landmark;
+});
+
+async function reverseGeocode(lat, lng) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) return {};
+    const data = await res.json();
+    const address = data.display_name || '';
+    const pincode = (data.address && (data.address.postcode || data.address['postal_code'])) || '';
+    const landmark = (data.address && (data.address.amenity || data.address.road || data.address.neighbourhood || data.address.suburb || data.address.village || data.address.town || data.address.city)) || '';
+    return { address, pincode, landmark };
+  } catch (e) {
+    return {};
+  }
+}
+
+addLocateControl('donationLocateBtn', async (pos) => {
+  const latlng = [pos.lat, pos.lng];
+  donationMap.setView(latlng, 13, { animate: true });
+  if(donationUserLocation.marker) donationMap.removeLayer(donationUserLocation.marker);
+  if(donationUserLocation.circle) donationMap.removeLayer(donationUserLocation.circle);
+  if(donationMarker) donationMap.removeLayer(donationMarker);
+  donationUserLocation.marker = L.circleMarker(latlng, { radius: 6, color: '#1E90FF', fillColor: '#1E90FF', fillOpacity: 0.9 }).addTo(donationMap);
+  donationUserLocation.circle = L.circle(latlng, { radius: Math.max(30, pos.accuracy || 50), color: '#1E90FF', fillOpacity: 0.06 }).addTo(donationMap);
+  donationMarker = L.marker(latlng).addTo(donationMap);
+  document.getElementById('donor_lat').value = pos.lat;
+  document.getElementById('donor_lng').value = pos.lng;
+  const info = await reverseGeocode(pos.lat, pos.lng);
+  const addrField = document.getElementById('donor_address');
+  const pinField = document.getElementById('donor_pincode');
+  const landField = document.getElementById('donor_landmark');
+  if (info.address && !addrField.value) addrField.value = info.address;
+  if (info.pincode && !pinField.value) pinField.value = info.pincode;
+  if (info.landmark && !landField.value) landField.value = info.landmark;
+});
+
+const ngoMap = L.map('ngoMap', {
+  minZoom: 3,
+  maxZoom: 18,
+  zoomControl: true,
+  scrollWheelZoom: true
+}).setView([20.5937, 78.9629], 5);
+
+const ngoTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '©️ OpenStreetMap contributors',
+  maxZoom: 19,
+  crossOrigin: true,
+  maxNativeZoom: 18
+}).addTo(ngoMap);
+
+ngoTiles.on('loading', () => {
+  document.body.classList.add('loading-active');
+});
+ngoTiles.on('load', () => {
+  ngoTilesLoaded = true;
+  checkAllLoaded();
+});
+
+let ngoMarker;
+ngoMap.on('click', async function(e) {
+  const {lat,lng} = e.latlng;
+  if(ngoMarker) ngoMap.removeLayer(ngoMarker);
+  ngoMarker = L.marker([lat,lng]).addTo(ngoMap);
+  document.getElementById('ngo_lat').value = lat;
+  document.getElementById('ngo_lng').value = lng;
+  const info = await reverseGeocode(lat, lng);
+  if (info.address) document.getElementById('ngo_address').value = info.address;
+  if (info.pincode) document.getElementById('ngo_pincode').value = info.pincode;
+  if (info.landmark) document.getElementById('ngo_landmark').value = info.landmark;
+});
+
+addLocateControl('ngoLocateBtn', async (pos) => {
+  const latlng = [pos.lat, pos.lng];
+  ngoMap.setView(latlng, 13, { animate: true });
+  if(ngoUserLocation.marker) ngoMap.removeLayer(ngoUserLocation.marker);
+  if(ngoUserLocation.circle) ngoMap.removeLayer(ngoUserLocation.circle);
+  if(ngoMarker) ngoMap.removeLayer(ngoMarker);
+  ngoUserLocation.marker = L.circleMarker(latlng, { radius: 6, color: '#1E90FF', fillColor: '#1E90FF', fillOpacity: 0.9 }).addTo(ngoMap);
+  ngoUserLocation.circle = L.circle(latlng, { radius: Math.max(30, pos.accuracy || 50), color: '#1E90FF', fillOpacity: 0.06 }).addTo(ngoMap);
+  ngoMarker = L.marker(latlng).addTo(ngoMap);
+  document.getElementById('ngo_lat').value = pos.lat;
+  document.getElementById('ngo_lng').value = pos.lng;
+  const info = await reverseGeocode(pos.lat, pos.lng);
+  const addrField = document.getElementById('ngo_address');
+  const pinField = document.getElementById('ngo_pincode');
+  const landField = document.getElementById('ngo_landmark');
+  if (info.address && !addrField.value) addrField.value = info.address;
+  if (info.pincode && !pinField.value) pinField.value = info.pincode;
+  if (info.landmark && !landField.value) landField.value = info.landmark;
+});
+
+donationThanks.querySelector('a').addEventListener('click', () => {
+  donationThanks.style.display="none";
+  donationForm.style.display="block";
+  setTimeout(() => donationMap.invalidateSize(), 100);
+});
+
+ngoThanks.querySelector('a').addEventListener('click', () => {
+  ngoThanks.style.display="none";
+  ngoForm.style.display="block";
+  setTimeout(() => ngoMap.invalidateSize(), 100);
+});
+
+window.addEventListener('load', () => {
+  domLoaded = true;
+  checkAllLoaded();
+});
+
+donationForm.addEventListener("submit", function(e){
+  preloader && preloader.parentNode && (preloader.style.display = 'flex');
+});
+ngoForm.addEventListener("submit", function(e){
+  preloader && preloader.parentNode && (preloader.style.display = 'flex');
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      () => {}, 
+      () => {}, 
+      { enableHighAccuracy: false, timeout: 6000, maximumAge: 600000 }
+    );
+  }
+});
+
+/* New JS glue: navigation handlers and a minimal chat (non-destructive) */
+(function(){
+  const nav = document.getElementById('mainNav');
+  const needHelpBtn = document.getElementById('needHelpBtn');
+  const aboutSection = document.getElementById('aboutSection');
+  if(nav){
+    nav.querySelectorAll('a[data-target]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const t = link.getAttribute('data-target');
+
+        // hide common panels before showing the requested one
+        donationForm.style.display = 'none';
+        ngoForm.style.display = 'none';
+        donationThanks.style.display = 'none';
+        ngoThanks.style.display = 'none';
+        if (aboutSection) { aboutSection.style.display = 'none'; aboutSection.setAttribute('aria-hidden','true'); }
+
+        if(t === 'donateForm'){
+          donateBtn.click();
+        } else if(t === 'ngoForm'){
+          ngoBtn.click();
+        } else if(t === 'about'){
+          // show about section
+          if (aboutSection) {
+            aboutSection.style.display = 'block';
+            aboutSection.setAttribute('aria-hidden','false');
+            aboutSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } else if(t === 'home'){
+          // already hid everything above; nothing else to show
+        }
+      });
+    });
+  }
+
+  function toggleChat(){
+    const chat = document.getElementById('chatBot');
+    if(!chat) return;
+    if(chat.style.display === 'flex'){
+      chat.style.display = 'none';
+      chat.setAttribute('aria-hidden','true');
+    } else {
+      chat.style.display = 'flex';
+      chat.setAttribute('aria-hidden','false');
+      document.getElementById('userInput').focus();
+    }
+  }
+
+  function addMessage(msg, type){
+    const div = document.createElement('div');
+    div.className = 'message ' + type;
+    div.textContent = msg;
+    const box = document.getElementById('chatMessages');
+    if(box){ box.appendChild(div); box.scrollTop = box.scrollHeight; }
+  }
+
+  function botReply(msg){
+    msg = (msg||'').toLowerCase();
+    let reply = "Sorry, I didn't understand that. Try asking about donating or getting food.";
+    if(msg.includes('donate')) reply = "To donate food, click Donate and use the map or 'Use my location'.";
+    else if(msg.includes('food') || msg.includes('help')) reply = "If you need food, share your location using the form map so nearby NGOs can reach out.";
+    else if(msg.includes('ngo')) reply = "Register your NGO via Register NGO form.";
+    addMessage(reply, 'botMsg');
+  }
+
+  document.getElementById('chatHeader').addEventListener('click', toggleChat);
+  document.getElementById('needHelpBtn').addEventListener('click', function(e){ e.preventDefault(); toggleChat(); });
+  document.getElementById('sendChatBtn').addEventListener('click', function(){ 
+    const input = document.getElementById('userInput');
+    const msg = input.value.trim();
+    if(!msg) return;
+    addMessage(msg, 'userMsg');
+    input.value = '';
+    setTimeout(()=> botReply(msg), 450);
+  });
+  document.getElementById('userInput').addEventListener('keypress', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('sendChatBtn').click(); }
+  });
+
+  // Preserve existing behavior: keep preloader, maps, locate buttons, forms untouched
+})();
 </script>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </body>
 </html>
